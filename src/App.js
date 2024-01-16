@@ -65,6 +65,10 @@ export default function App() {
     setSelectedId((selectedId) => (id === selectedId ? null : id));
   }
 
+  function handleCloseMovie() {
+    setSelectedId(null);
+  }
+
   function handleAddWatched(movie) {
     setWatched((watched) => [...watched, movie]);
   }
@@ -97,9 +101,8 @@ export default function App() {
           setError("");
         } catch (err) {
           if (err) {
-            console.log(err.message);
-
             if (err.name !== "AbortError") {
+              console.log(err.message);
               setError(err.message);
             }
           }
@@ -114,6 +117,7 @@ export default function App() {
         return;
       }
 
+      handleCloseMovie();
       fetchMovies();
 
       return function () {
@@ -143,6 +147,7 @@ export default function App() {
           {selectedId ? (
             <MovieDetails
               selectedId={selectedId}
+              onCloseMovie={handleCloseMovie}
               onAddWatched={handleAddWatched}
               watched={watched}
             />
@@ -294,6 +299,23 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
   useEffect(
     function () {
+      function callback(e) {
+        if (e.code === "Escape") {
+          onCloseMovie();
+        }
+      }
+
+      document.addEventListener("keydown", callback);
+
+      return function () {
+        document.removeEventListener("keydown", callback);
+      };
+    },
+    [onCloseMovie]
+  );
+
+  useEffect(
+    function () {
       async function getMovieDetails() {
         setIsLoading(true);
         const res = await fetch(
@@ -316,7 +338,7 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
 
       return function () {
         document.title = "usePopcorn";
-        console.log(`Clean up effect for movie ${title}`);
+        // console.log(`Clean up effect for movie ${title}`);
       };
     },
     [title]
