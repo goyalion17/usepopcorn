@@ -65,10 +65,6 @@ export default function App() {
     setSelectedId((selectedId) => (id === selectedId ? null : id));
   }
 
-  function handleCloseMovie() {
-    setSelectedId(null);
-  }
-
   function handleAddWatched(movie) {
     setWatched((watched) => [...watched, movie]);
   }
@@ -79,13 +75,16 @@ export default function App() {
 
   useEffect(
     function () {
+      const controller = new AbortController();
+
       async function fetchMovies() {
         try {
           setIsLoading(true);
           setError("");
 
           const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+            { signal: controller.signal }
           );
 
           if (!res.ok)
@@ -99,7 +98,10 @@ export default function App() {
         } catch (err) {
           if (err) {
             console.log(err.message);
-            setError(err.message);
+
+            if (err.name !== "AbortError") {
+              setError(err.message);
+            }
           }
         } finally {
           setIsLoading(false);
@@ -112,8 +114,11 @@ export default function App() {
         return;
       }
 
-      handleCloseMovie();
       fetchMovies();
+
+      return function () {
+        controller.abort();
+      };
     },
     [query]
   );
@@ -138,7 +143,6 @@ export default function App() {
           {selectedId ? (
             <MovieDetails
               selectedId={selectedId}
-              onCloseMovie={handleCloseMovie}
               onAddWatched={handleAddWatched}
               watched={watched}
             />
@@ -311,9 +315,9 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
       document.title = `Movie | ${title}`;
 
       return function () {
-        document.title = 'usePopcorn'
+        document.title = "usePopcorn";
         console.log(`Clean up effect for movie ${title}`);
-      }
+      };
     },
     [title]
   );
